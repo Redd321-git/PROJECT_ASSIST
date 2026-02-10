@@ -1,0 +1,113 @@
+weaviate_classes: 
+  - UserProfile
+  - Chats
+  - Documents
+  - EpisodicMemory
+  - SemanticMemory
+  - WorkingMemory
+  - Task
+
+postgres_tables:
+  - Users
+  - Prompts
+
+classes:
+  - class_name: UserProfile
+    description: "contains users profiles their ids, preferences, style and goals"
+    properties:
+      - name: user_id
+        dataType: TEXT
+      - name: preferences
+        dataType: TEXT
+      - name: style
+        dataType: TEXT
+      - name: goals
+        dataType: TEXT
+      - name: updated_at
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
+  - class_name: Chat
+    description: ""
+    properties:
+      - name: user_id
+        dataType: TEXT
+      - name: chat_id
+        dataType: TEXT
+      - name: message
+        dataType: TEXT
+      - name: timestamp
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
+  - class_name: Documents
+    description: ""
+    properties:
+      - name: title
+        dataType: TEXT
+      - name: doc_id
+        dataType: TEXT
+      - name: content
+        dataType: TEXT
+      - name: uploaded_at
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
+  - class_name: EpisodicMemory
+    description: ""
+    properties:
+      - name: doc_id
+        dataType: TEXT
+      - name: user_id
+        dataType: TEXT
+      - name: session_id
+        dataType: TEXT
+      - name: event_type
+        dataType: TEXT
+      - name: content
+        dataType: TEXT
+      - name: timestamp
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
+  - class_name: SemanticMemory
+    description: ""
+    properties:
+      - name: doc_id
+        dataType: TEXT
+      - name: source_id
+        dataType: TEXT
+      - name: source_type
+        dataType: TEXT
+      - name: content
+        dataType: TEXT
+      - name: tags
+        dataType: TEXT
+      - name: timestamp
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
+  - class_name: WorkingMemory
+    description: ""
+    properties:
+      - name: session_id
+        dataType: TEXT
+      - name: context
+        dataType: TEXT
+      - name: expires_at
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
+  - class_name: Task
+    description: ""
+    properties:
+      - name: task_id
+        dataType: TEXT
+      - name: description
+        dataType: TEXT
+      - name: status
+        dataType: TEXT
+      - name: created_at
+        dataType: DATE
+    embid_model: "embed-v4.0"
+
