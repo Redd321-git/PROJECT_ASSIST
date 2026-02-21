@@ -12,7 +12,7 @@ postgres_tables:
   - Prompts
 
 classes:
-  - class_name: UserProfile
+  UserProfile:
     description: "contains users profiles their ids, preferences, style and goals"
     properties:
       - name: user_id
@@ -27,7 +27,7 @@ classes:
         dataType: DATE
     embid_model: "embed-v4.0"
 
-  - class_name: Chat
+  Chat:
     description: ""
     properties:
       - name: user_id
@@ -40,9 +40,11 @@ classes:
         dataType: DATE
     embid_model: "embed-v4.0"
 
-  - class_name: Documents
+  Documents:
     description: ""
     properties:
+      - name: user_id
+        dataType: TEXT
       - name: title
         dataType: TEXT
       - name: doc_id
@@ -53,7 +55,7 @@ classes:
         dataType: DATE
     embid_model: "embed-v4.0"
 
-  - class_name: EpisodicMemory
+  EpisodicMemory:
     description: ""
     properties:
       - name: doc_id
@@ -70,12 +72,10 @@ classes:
         dataType: DATE
     embid_model: "embed-v4.0"
 
-  - class_name: SemanticMemory
+  SemanticMemory:
     description: ""
     properties:
       - name: doc_id
-        dataType: TEXT
-      - name: source_id
         dataType: TEXT
       - name: source_type
         dataType: TEXT
@@ -87,7 +87,7 @@ classes:
         dataType: DATE
     embid_model: "embed-v4.0"
 
-  - class_name: WorkingMemory
+  WorkingMemory:
     description: ""
     properties:
       - name: session_id
@@ -98,7 +98,7 @@ classes:
         dataType: DATE
     embid_model: "embed-v4.0"
 
-  - class_name: Task
+  Task:
     description: ""
     properties:
       - name: task_id
@@ -110,4 +110,3 @@ classes:
       - name: created_at
         dataType: DATE
     embid_model: "embed-v4.0"
-

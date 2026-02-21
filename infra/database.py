@@ -3,7 +3,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from . import get_dotenv
+from infra import get_dotenv
 
 env_file=get_dotenv()
 url=f"postgresql://{env_file['DB_USER']}:{env_file['DB_PASSWORD']}@{env_file['DB_HOST']}:{env_file['DB_PORT']}/{env_file['DB_NAME']}"

@@ -1,10 +1,11 @@
-from src.llm_interface import LLMInterface
-from src.rag_engine import RAGEngine
 from src.schemas import InputData, IncommingData, Intent, AssistState
 from sqlalchemy.orm import Session
 from infra.models import User
-
-from . import get_tools,get_dotenv,fetch_prompt_func, fetch_preferences_func
+from src.rag_engine import RAGEngine
+from src.llm_interface import LLMInterface
+from src import get_tools,get_dotenv
+from src.crud import fetch_prompt, fetch_preferences, fetch_chat_summary
+from typing import Text
 import json
 
 class ToolInvoker:
@@ -20,9 +21,9 @@ class ToolInvoker:
 class InputProcessor:
     def __init__(self):
         self.env=get_dotenv()
-        self.initial_prompt=fetch_prompt_func(self.env['INITIAL_PROMPT_NAME'])
-        self.aug_final_prompt=fetch_prompt_func(self.env['FINAL_STEP_PROMPT_NAME'])
-        self.aug_mid_prompt=fetch_prompt_func(self.env['INTERMEDIATE_STEP_PROMPT_NAME'])
+        self.initial_prompt=fetch_prompt(self.env['INITIAL_PROMPT_NAME'])
+        self.aug_final_prompt=fetch_prompt(self.env['FINAL_STEP_PROMPT_NAME'])
+        self.aug_mid_prompt=fetch_prompt(self.env['INTERMEDIATE_STEP_PROMPT_NAME'])
     def process(self,state:AssistState):
         msg=[]
         msg.append({
@@ -58,7 +59,21 @@ class InputProcessor:
             "content":state.user_input
         })
         state.llm_input=msg
-        
+    def build_consolidation_message(self,consol_window):
+        summarizer_prompt=fetch_prompt(self.env['CHAT_SUMMARIZE_PROMPT_NAME'])
+        msg=[]
+        msg.append({
+            'role':'system',
+            'content':summarizer_prompt
+        })
+        for m in consol_window:
+            chat+=f"{m['role'].title()}: {m['content']}\n"
+        msg.append({
+            'role':'user',
+            'content':f'summarize the following chat=[{chat}]'
+        })
+        return msg
+
 class OutputProcessor():
     def __init__(self):
         pass
@@ -67,7 +82,7 @@ class OutputProcessor():
     def process(self,state:AssistState):
         state.intent=json.loads(state.llm_output['message']['content'])
         intent=state.intent
-        if intent.get('final_output') :
+        if intent.get('final_output'):
             state.final_output=intent['final_output']
             state.done=True
             return
@@ -81,18 +96,18 @@ class OutputProcessor():
             state.final_output="error in generating response"
 
 class IntentAnalyzer:
-    def __init__(self,rag_engine=None,tools=None,max_steps=5):
+    def __init__(self,rag_engine:RAGEngine,tools=None,max_steps=5):
         self.tools=tools
         self.tool_invoker=ToolInvoker(tools=self.tools)
-        self.rag_engine=rag_engine if rag_engine else RAGEngine()
+        self.rag_engine=rag_engine 
     async def analyze(self,state:AssistState):
         await self.rag_engine.process(state)
         self.tool_invoker.invoke(state)
 
 class FlowManager:
-    def __init__(self,llm_interface=None,rag_engine=None,tools=None):
-        self.llm_interface=llm_interface if llm_interface else LLMInterface()
-        self.rag_engine=rag_engine if rag_engine else RAGEngine()
+    def __init__(self,llm_interface:LLMInterface,rag_engine:RAGEngine,tools=None):
+        self.llm_interface=llm_interface 
+        self.rag_engine=rag_engine 
         self.tools=tools
         self.in_processor=InputProcessor()
         self.intent_analyzer=IntentAnalyzer(rag_engine=self.rag_engine,tools=tools)
@@ -102,16 +117,42 @@ class FlowManager:
         await self.llm_interface.generate_response(state)
         self.out_processor.process(state)
         await self.intent_analyzer.analyze(state)
+    async def consolidate_memory(self,consol_window):
+        msg=self.in_processor.build_consolidation_message(consol_window)
+        responce = await self.llm_interface.summarize(msg)
+        self.rag_engine.consolidate(responce['message']['content'])
 
 class Assistor:
-    def __init__(self,llm_interface=None,rag_engine=None,tools=None):
+    def __init__(self,consolidation_bound=5,llm_interface:LLMInterface=None,rag_engine:RAGEngine=None,tools=None):
         self.tools=get_tools()
         self.loop=FlowManager(llm_interface=llm_interface,rag_engine=rag_engine,tools=self.tools)
         self.env=get_dotenv()
-    async def assist(self, input:InputData, db: Session, user: User):
+        self.convo_count=0
+        self.max_bound=consolidation_bound
+        self.consol_window=[]
+        #self.previous_inference=None
+    async def assist(self, input:InputData, db: Session, user: User, chat_id: Text):
+        self.convo_count=self.convo_count+1
         state=AssistState(self.env['MAX_STEPS'])
         state.user_input=input
-        state.user_pref=fetch_preferences_func(user.id) #fetch functions for dynamic fetching of preference 
+        state.chat_id=chat_id
+        state.prev_chat_summary=fetch_chat_summary(db=db,chat_id=chat_id,user_id=user.id)
+        pref=fetch_preferences(db,user.id)
+        blog=[f"{attr} : {txt}" for attr,txt in getattr(o=pref,name="preference_blog").items()]
+        state.user_pref="\n".join(blog)
         while not state.done:
             await self.loop.execute(state)
+        self.consol_window.append({
+            'role':'user',
+            'content':state.user_input
+            })
+        self.consol_window.append({
+            'role':'assistant',
+            'content':state.final_output
+            })
+        if self.convo_count>self.max_bound : 
+            self.loop.consolidate_memory(self.consol_window)
+            self.consol_window.clear()
+            self.convo_count=0
+            pass
         return state.final_output

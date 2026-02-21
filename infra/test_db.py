@@ -1,5 +1,20 @@
 from infra.database import create_weaviate_client
 from weaviate.classes.data import DataObject
+from infra import load_db_config
+
+db_config=load_db_config()
+def check_collections():
+    memory_schema=db_config['classes']
+    clnt=create_weaviate_client()
+    existing={x for x in clnt.collections.list_all()}
+    try:
+        for i,z in memory_schema.items():
+            if i in existing:
+                
+                print(f"collention {clnt.collections.use(i).config.get()}")
+    finally :
+        clnt.close()
+check_collections()
 
 def test_insert_and_read():
     client = create_weaviate_client()

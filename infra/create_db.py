@@ -1,8 +1,9 @@
 import psycopg2
 from . import get_dotenv,load_db_config
 from infra.database import create_db_engine, create_weaviate_client
-import weaviate
+from infra.models import Base
 from weaviate.classes.config import Property,DataType,Configure
+import weaviate
 
 db_config=load_db_config()
 env_file=get_dotenv()
@@ -43,7 +44,6 @@ def create_rdatabase():
 	
 def create_tables():
 	engine, SessionLocal = create_db_engine()
-	from .models import Base
 	Base.metadata.create_all(bind=engine)
 	print("Tables created")
     
@@ -57,16 +57,16 @@ def create_vdatabase():
 	clnt=create_weaviate_client()
 	existing={x for x in clnt.collections.list_all()}
 	try:
-		for i in memory_schema:
-			if i['class_name'] in existing:
+		for i,z in memory_schema.items():
+			if i in existing:
 				continue
 			clnt.collections.create(
-				name=i['class_name'],
-				properties=[Property(name=x['name'],data_type=datatyp_map[x['dataType']]) for x in i['properties']],
-				description=i['description'],
-				vectorizer_config=Configure.Vectorizer.text2vec_cohere(i['embid_model'])
+				name=i,
+				properties=[Property(name=x['name'],data_type=datatyp_map[x['dataType']]) for x in z['properties']],
+				description=z['description'],
+				vectorizer_config=Configure.Vectorizer.text2vec_cohere(z['embid_model'])
 			)
-			print(f"collention create : {i['class_name']}")
+			print(f"collention create : {i}")
 	finally :
 		clnt.close()
 
