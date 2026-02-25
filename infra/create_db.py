@@ -1,6 +1,6 @@
 import psycopg2
 from . import get_dotenv,load_db_config
-from infra.database import create_db_engine, create_weaviate_client
+from infra.database import create_db_engine, create_session_local, create_weaviate_client
 from infra.models import Base
 from weaviate.classes.config import Property,DataType,Configure
 import weaviate
@@ -43,7 +43,7 @@ def create_rdatabase():
 	con.close()
 	
 def create_tables():
-	engine, SessionLocal = create_db_engine()
+	engine = create_db_engine()
 	Base.metadata.create_all(bind=engine)
 	print("Tables created")
     
@@ -70,5 +70,7 @@ def create_vdatabase():
 	finally :
 		clnt.close()
 
-create_rdatabase()
-create_vdatabase()
+
+if __name__=="__main__":
+	create_rdatabase()
+	create_vdatabase()

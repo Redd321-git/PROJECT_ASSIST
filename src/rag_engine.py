@@ -1,10 +1,6 @@
-from . import assist_memory,assist_memory_schema
-from fastapi import Depends
 from weaviate import WeaviateClient
-from src.schemas import AssistState
-from src.security import get_current_user,get_session_data
 from infra.models import User, UserActive
-from typing import Text
+from src.schemas import AssistState, SessionData
 import json
 
 class PropertyConstructor:
@@ -14,8 +10,8 @@ class PropertyConstructor:
             self,
             memory_type:str, 
             data:dict, 
-            user_data:User=Depends(get_current_user), 
-            session_data:UserActive=Depends(get_session_data)
+            user_data:User, 
+            session_data:SessionData
             ):
         property={}
         cls=self.assist_memory_schema.get(memory_type)
@@ -40,7 +36,7 @@ class PropertyConstructor:
 class Retriever:
     def __init__(self, weaviate_client_: WeaviateClient):
         self.weaviate_client=weaviate_client_
-    def retrieve(self, opr:dict):
+    def retrieve(self, opr:dict,user_data:User):
         if opr.get('memory_type'):
             memory=self.weaviate_client.collections.use(opr['memory_type'])
             response=memory.query.hybrid(
@@ -93,27 +89,24 @@ class MemoryController:
         self.memory_buffers={
             memory_type:[] for memory_type in self.assist_memory
         }
-        self.buffer_limits={memory_type:self.assist_memory[memory_type]['buffer_limit'] for memory_type in self.assist_memory}
+        self.buffer_limits={memory_type:self.assist_memory_schema[memory_type]['buffer_limit'] for memory_type in self.assist_memory}
         self.property_constructor=PropertyConstructor(assist_memory_schema=self.assist_memory_schema)
-    def verify(self,suggestion: list):
-        #i thought of adding some determisitic rules for llm direclty adding data to memory so i can limit control of llm over memory
-        #but as of now i direclty let them use memory to remember 
-        for mem_obj in suggestion:
-            mem_type=mem_obj["memory_type"]
-            if self.assist_memory.get(mem_type):
+    def _add_to_memory(self,mem_type,mem_obj:dict,user_data:User,session_data:SessionData):
+        if self.assist_memory.get(mem_type):
+                mem_obj=self.property_constructor.construct(memory_type=mem_type,data=mem_obj,user_data=user_data,session_data=session_data)
                 self.memory_buffers[mem_type].append(mem_obj)
                 if len(self.memory_buffers[mem_type])>self.buffer_limits[mem_type]:
                     self.memorizer.store_batch(self.memory_buffers[mem_type],mem_type)
                     self.memory_buffers[mem_type].clear()
-    def consolidate(self,consol_window:dict):
+    def verify(self,suggestion: list,user_data:User,session_data:SessionData):
+        #i thought of adding some determisitic rules for llm direclty adding data to memory so i can limit control of llm over memory
+        #but as of now i direclty let them use memory to remember 
+        for obj in suggestion:
+            mem_type=obj.get("memory_type")
+            self._add_to_memory(mem_type=mem_type,mem_obj=obj,user_data=user_data,session_data=session_data)
+    def consolidate(self,user_data:User,session_data:SessionData,consol_window:dict):
         for mem_type,obj in consol_window.items():
-            if self.assist_memory.get(mem_type):
-                self.property_constructor.construct(memory_type=mem_type,data=obj)
-                self.memory_buffers[mem_type].append()
-
-                if len(self.memory_buffers[mem_type])>self.buffer_limits[mem_type]:
-                    self.memorizer.store_batch(self.memory_buffers[mem_type],mem_type)
-                    self.memory_buffers[mem_type].clear()
+            self._add_to_memory(mem_type=mem_type,mem_obj=obj,user_data=user_data,session_data=session_data)
 
 class RAGEngine:
     def __init__(
@@ -124,13 +117,11 @@ class RAGEngine:
         self.weaviate_client=weaviate_client
         self.retriever=Retriever(self.weaviate_client)
         self.memory_controller=memory_controller
-    def process(self, state:AssistState):
-        if not state.req["rag_req"]:
-            state.relevent_content=None
-            return
+    def process(self, state:AssistState,user:User):
+        req=state.reqs.get('rag_req',{})
         relevent_content=[]
         suggested_memorize_data=[]
-        for sno,opr in state.req["rag_req"].items():
+        for sno,opr in req.items():
             if opr['task_type']=="retrieve" :
                 res=self.retriever.retrieve(opr)
                 if res is not None:
@@ -142,8 +133,8 @@ class RAGEngine:
                 pass
                 # some logic to let the admin know of the raised error
         state.relevent_content= '\n'.join(relevent_content) if len(relevent_content)>=1 else None
-        self.memory_controller.verify(suggested_memorize_data)
-    def consolidate(self,session_snapshot):
+        self.memory_controller.verify(suggested_memorize_data,user_data=user,session_data=state.session_data)
+    def consolidate(self,user:User,session_data:UserActive,session_snapshot):
         consol_window=json.loads(session_snapshot)
-        self.memory_controller.consolidate(consol_window)
+        self.memory_controller.consolidate(user_data=user,session_data=session_data,consol_window=consol_window)
 

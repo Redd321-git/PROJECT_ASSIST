@@ -17,9 +17,7 @@ dotenv_path=Path(__file__).parent.parent/".env"
 
 def get_dotenv():
     return dotenv_values(dotenv_path)
-def get_db():
-    from infra.database import get_db
-    return get_db
+
 def create_weaviate_client():
     from infra.database import create_weaviate_client
     return create_weaviate_client

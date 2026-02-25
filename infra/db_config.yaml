@@ -1,6 +1,6 @@
 weaviate_classes: 
   - UserProfile
-  - Chats
+  - Chat
   - Documents
   - EpisodicMemory
   - SemanticMemory
@@ -25,6 +25,7 @@ classes:
         dataType: TEXT
       - name: updated_at
         dataType: DATE
+    buffer_limit: 20
     embid_model: "embed-v4.0"
 
   Chat:
@@ -38,6 +39,7 @@ classes:
         dataType: TEXT
       - name: timestamp
         dataType: DATE
+    buffer_limit: 20
     embid_model: "embed-v4.0"
 
   Documents:
@@ -53,6 +55,7 @@ classes:
         dataType: TEXT
       - name: uploaded_at
         dataType: DATE
+    buffer_limit: 20
     embid_model: "embed-v4.0"
 
   EpisodicMemory:
@@ -70,6 +73,7 @@ classes:
         dataType: TEXT
       - name: timestamp
         dataType: DATE
+    buffer_limit: 20
     embid_model: "embed-v4.0"
 
   SemanticMemory:
@@ -85,6 +89,7 @@ classes:
         dataType: TEXT
       - name: timestamp
         dataType: DATE
+    buffer_limit: 20
     embid_model: "embed-v4.0"
 
   WorkingMemory:
@@ -96,6 +101,7 @@ classes:
         dataType: TEXT
       - name: expires_at
         dataType: DATE
+    buffer_limit: 20
     embid_model: "embed-v4.0"
 
   Task:
@@ -109,4 +115,6 @@ classes:
         dataType: TEXT
       - name: created_at
         dataType: DATE
+    
+    buffer_limit: 20
     embid_model: "embed-v4.0"

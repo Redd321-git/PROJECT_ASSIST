@@ -12,8 +12,11 @@ def delete_vec_db():
         for i,z in memory.items():
             if i in existing:
                 clnt.collections.delete(i)
+    except Exception as e:
+        print(f"error detected {e}")
     finally:
         clnt.close()
 
-delete_vec_db()
+if __name__=="__main__":
+    delete_vec_db()
     

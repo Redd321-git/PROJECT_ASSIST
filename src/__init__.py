@@ -10,7 +10,7 @@ def get_tools():
     for file in tools_dir.glob("*.py"):
         if file.name != "__init__.py":
             module_name = file.stem
-            module = importlib.import_module(f"tools.{module_name}")
+            module = importlib.import_module(f"src.tools.{module_name}")
             cls=getattr(module, module_name.capitalize())
             tools[module_name]=cls()
     return tools

@@ -66,4 +66,8 @@ async def change_default_models(model_name:str, action_type:str):
 	load_model(model_name)
 	models[action_type]=model_name
 	return {"message":f"default model for {action_type} changed to {model_name}"}
-install_ollama()
+
+if __name__=="__main__":
+	import uvicorn
+	uvicorn.run("llm_hostings.main:app",host="0.0.0.0",port=8001, reload=True, workers=1)
+	install_ollama()
