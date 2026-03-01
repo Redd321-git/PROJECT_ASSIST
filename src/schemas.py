@@ -1,7 +1,8 @@
 
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional, Text
+from typing import Optional, Text, Literal
 from uuid import UUID
+from weaviate.classes.config import DataType
 
 class LoginForm(BaseModel):
 	email: str
@@ -15,7 +16,39 @@ class UserCreate(BaseModel):
 class SessionData(BaseModel):
     session_id: UUID
 
+'''class MemoryCollection(BaseModel):
+    class_name:str
+    properties:list
 
+class UserProfileClass(MemoryCollection):
+    class_name:Literal["UserProfile"]="UserProfile"
+
+class DocumentClass(MemoryCollection):
+    class_name:Literal["Documents"]="Documents"
+
+class EpisodicMemoryClass(MemoryCollection):
+    class_name:Literal["EpisodicMemory"]="EpisodicMemory"
+
+class SemanticMemroyClass(MemoryCollection):
+    class_name:Literal["SemanticMemroy"]="SemanticMemroy"
+
+class TaskClass(MemoryCollection):
+    class_name:Literal["Task"]="Task"
+
+class MemoryOperation(BaseModel):
+    task_type: str
+    memory_type: str
+
+class Retrieve(MemoryOperation):
+    task_type: Literal["retrieve"]= "retrieve"
+    rag_query: str
+
+class Memorize(MemoryOperation):
+    task_type: Literal["memorize"]= "memorize"
+    : MemoryCollection
+    attrs: dict
+
+'''
 class UserResponse(BaseModel):
 	name: str
 	email: EmailStr

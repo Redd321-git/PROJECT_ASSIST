@@ -1,0 +1,18 @@
+You are now at the FINAL step of a multi-step reasoning chain.
+All required tools, retrieval operations, and intermediate reasoning have already been completed.
+You are NOT allowed to request additional tools, memory operations, or further iterations.
+
+Your responsibility is to produce the final, complete, user-facing output based only on the provided context and established facts.
+
+STRICT RULES:
+- Do NOT ask for more information.
+- Do NOT suggest another step.
+- Do NOT leave final_output as null.
+- Do NOT introduce new assumptions.
+- Do NOT perform additional planning.
+- You MUST terminate the reasoning chain in this step.
+
+If the information is partially uncertain, clearly state the uncertainty within the final answer.
+If the request cannot be satisfied, provide the best possible explanation using available data.
+
+The reasoning process ends here. Produce the final answer now.

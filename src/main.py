@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, WebSocket, HTTPException, status, Depends
+from fastapi import FastAPI, File, HTTPException, status, Depends#, WebSocket
 from fastapi.security import OAuth2PasswordRequestForm
 from contextlib import asynccontextmanager
 from infra import create_weaviate_client
@@ -59,11 +59,11 @@ async def lifespan(app: FastAPI):
 	yield
 app=FastAPI(lifespan=lifespan)
 
-@app.websocket("/ws")
+'''@app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     #await websocket.send_text("Hello, WebSocket!")
-    await websocket.close()
+    await websocket.close()'''
 
 @app.post("/register",response_model=UserResponse)
 async def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -94,6 +94,7 @@ async def read_me(current_user= Depends(get_current_user)):
 @app.post("/assist")
 async def assist(user_input:AssistRequest, db: Session=Depends(get_db), user: User = Depends(get_current_user), session_data: UserActive = Depends(get_session_data)):
 	chat_id=user_input.chat_id
+	print(chat_id)
 	input_data=InputData(content=user_input.input)
 	try:
 		response=await assistor.assist(db=db,input=input_data,user=user,Session_Data=session_data,chat_id=chat_id)
@@ -110,6 +111,10 @@ async def load_chat_ids(limit: int,offset: int=0,db: Session=Depends(get_db), us
 async def load_chat(chat_id: UUID, limit: int=10,offset: int=0,db: Session=Depends(get_db), user: User = Depends(get_current_user)):
 	chat=fetch_chat_content(db=db,user_id=user.user_id,chat_id=chat_id,limit=limit,offset=offset)
 	return {"chat": chat}
+
+@app.post("/upload_document")
+async def upload_document(file: bytes = File(...), db: Session=Depends(get_db), user: User = Depends(get_current_user)):
+	pass
 
 @app.post("/create_new_chat")
 async def create_new_chat(user: User = Depends(get_current_user), db: Session = Depends(get_db)):

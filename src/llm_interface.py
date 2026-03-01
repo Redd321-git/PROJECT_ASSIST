@@ -13,9 +13,19 @@ class LLMInterface:
             responce=await client.post(self.llm_url,json=message)
         print(state.llm_input)
         state.llm_output=responce.json()
-        print(state.llm_output)
+        '''state.llm_output={
+            'message':{'content': '{\n  "final_output": "Hello Ritesh!"\n}'}
+        }'''
+        #print(state.llm_output)
         print(state.llm_output['message']['content'])
     async def summarize(self,msg):
-        async with httpx.AsyncClient() as client:
+        print("trying summarization")
+        print(msg)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as client:
             responce=await client.post(self.llm_url,json=msg)
+        print(responce.json())
+        print("the above is the reponse")
         return responce.json()
+        '''return {
+            'message':{'content': '{\n  "final_output": "Hello Ritesh!"\n}'}
+        }'''

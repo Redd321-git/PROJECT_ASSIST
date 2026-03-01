@@ -69,7 +69,8 @@ class Memorizer:
             memory=self.weaviate_client.collections.use(memory_type)
             with memory.batch.fixed_size(batch_size=self.batch_size) as batch:
                 for mem_obj in memory_buffer:
-                    if mem_obj.get('content') : batch.add_object(properties=mem_obj['content'])
+                    if mem_obj.get('content') : 
+                        batch.add_object(properties=mem_obj['content'])
             if len(memory.batch.failed_objects)>=1:
                 return {'data_insertion':'failure'}
             return {'data_insertion':'success'}
@@ -94,6 +95,7 @@ class MemoryController:
     def _add_to_memory(self,mem_type,mem_obj:dict,user_data:User,session_data:SessionData):
         if self.assist_memory.get(mem_type):
                 mem_obj=self.property_constructor.construct(memory_type=mem_type,data=mem_obj,user_data=user_data,session_data=session_data)
+                #chunking logic
                 self.memory_buffers[mem_type].append(mem_obj)
                 if len(self.memory_buffers[mem_type])>self.buffer_limits[mem_type]:
                     self.memorizer.store_batch(self.memory_buffers[mem_type],mem_type)
@@ -137,4 +139,5 @@ class RAGEngine:
     def consolidate(self,user:User,session_data:UserActive,session_snapshot):
         consol_window=json.loads(session_snapshot)
         self.memory_controller.consolidate(user_data=user,session_data=session_data,consol_window=consol_window)
-
+    def document():
+        pass

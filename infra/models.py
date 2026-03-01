@@ -1,6 +1,8 @@
 from weaviate.classes.config import DataType
 from sqlalchemy import UUID, Column, Integer, String, DateTime, ForeignKey, JSON, Text, Boolean
 from infra.database import Base
+from pydantic import BaseModel
+from typing import Literal
 import json,enum
 
 class Roles(enum.Enum):
@@ -23,7 +25,7 @@ class UserActive(Base):
     session_id = Column(Text, nullable=True)
 
 class UserChatActivity(Base):
-    __tablename__ = "user_convo_count"
+    __tablename__ = "user_chat_activity"
     user_id = Column(UUID, ForeignKey("users.user_id"),index=True, nullable=False)
     chat_id = Column(UUID,primary_key=True, index=True, nullable=False)
     active = Column(Boolean,default=True)
@@ -40,7 +42,7 @@ class Prompts(Base):
     description = Column(Text)
     
 class UserPreferences(Base):
-    __tablename__ = "user_profile"
+    __tablename__ = "user_preferences"
     id = Column(UUID,primary_key=True,index=True)
     user_id = Column(UUID,ForeignKey("users.user_id"),nullable=False)
     preference_name = Column(Text,nullable=False)
@@ -57,30 +59,37 @@ class UserPreferenceBlog(Base):
 class UserChat(Base):
     """treats one user input and one assistant response as one chat entry, stores them in a single row for easy retrieval and summary"""
     __tablename__ = "chats"
-    user_id = Column(UUID,ForeignKey("users.user_id"),nullable=False)
-    chat_id = Column(UUID,primary_key=True,nullable=False)
-    content = Column(Text)
+    id = Column(UUID,primary_key=True,nullable=False)
+    user_id = Column(UUID,ForeignKey("users.user_id"),index=True,nullable=False)
+    chat_id = Column(UUID,index=True,nullable=False)
+    content = Column(JSON,nullable=False)
     timestamp = Column(DateTime,nullable=False)
 
 class ChatSummaries(Base):
     __tablename__ = "chat_summaries"
     user_id = Column(UUID,ForeignKey("users.user_id"),nullable=False)
-    chat_id = Column(UUID,ForeignKey("chats.chat_id"),primary_key=True,nullable=False)
+    chat_id = Column(UUID,primary_key=True,nullable=False)
     content = Column(Text)
     timestamp = Column(DateTime,nullable=False)
 
-class userProfileClass:
+class MemoryCollection(BaseModel):
+    class_name=str
+    properties=list
+    description=str
+
+class UserProfileClass(MemoryCollection):
     class_name="UserProfile"
     properties=[
         {"name":"user_id","dataType":DataType.TEXT},
+        {"name":"task_type","dataType":DataType.TEXT},
         {"name":"preferences","dataType":DataType.TEXT},
-        {"name":"style","dataType":DataType.TEXT},
+        {"name":"style","dataType":DataType.TEXT,},
         {"name":"goals","dataType":DataType.TEXT},
         {"name":"timestamp","dataType":DataType.DATE}
     ]
-    description="contains users prifiles their ids, prefernces, style and goals"
+    description="contains users profiles their ids, prefernces, style and goals"
 
-class documentClass:
+class DocumentClass:
     class_name="Documents"
     properties=[
         {"name":"user_id","dataType":DataType.TEXT},

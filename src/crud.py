@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from infra.models import Prompts, User, UserChat, UserChatActivity, UserPreferenceBlog, ChatSummaries, UserActive
+from infra.models import Prompts, User, UserChat, UserChatActivity, UserPreferenceBlog, ChatSummaries, UserActive, UserPreferences
 from fastapi import Depends,HTTPException
 from src.schemas import UserCreate
 from src.security import get_password_hash,generate_unique_id,generate_chat_id,generate_timestamp
 from typing import Text
+import json
 
 def fetch_prompt(db:Session,prompt_name:Text):
 	prompt=db.query(Prompts).filter(Prompts.prompt_name==prompt_name).first()
@@ -13,6 +14,29 @@ def fetch_preferences(db:Session,current_user: User):
     responce=db.query(UserPreferenceBlog).filter(UserPreferenceBlog.user_id==current_user.user_id).first()
     return responce
 
+def create_user_preference(db:Session,current_user: User,preference_name: Text,preference_mode: Text):
+	new_entry=UserPreferences(
+		id=generate_unique_id(),
+		user_id=current_user.user_id,
+		preference_name=preference_name,
+		preference_mode=preference_mode,
+		updated_at=generate_timestamp(),
+		created_at=generate_timestamp()
+	)
+	db.add(new_entry)
+	db.commit()
+
+def update_preferences(db:Session,current_user: User,preference_blog: dict):
+	existing_entries=db.query(UserPreferences).filter(UserPreferences.user_id==current_user.user_id).all()
+	for pref_name,pref_mode in preference_blog.items():
+		existing_entry=next((entry for entry in existing_entries if entry.preference_name==pref_name),None)
+		if existing_entry:
+			existing_entry.preference_mode=pref_mode
+			existing_entry.updated_at=generate_timestamp()
+		else:
+			create_user_preference(db=db,current_user=current_user,preference_name=pref_name,preference_mode=pref_mode)
+	db.commit()
+	
 def create_user(db: Session, user: UserCreate):
 	existing_user=db.query(User).filter((User.name == user.username )).first()
 	if existing_user:
@@ -70,9 +94,10 @@ def get_last_active(db:Session,user_id: Text):
 
 def store_chat(db:Session,user_id: Text,chat_id: Text,user_input: Text,assistant_output: Text):
 	user_chat = UserChat(
+		id=generate_chat_id(),
 		user_id=user_id,
 		chat_id=chat_id,
-		content=f"User: {user_input}\nAssistant: {assistant_output}",
+		content={"user": user_input, "assistant": assistant_output},
 		timestamp=generate_timestamp()
 	)
 	db.add(user_chat)
@@ -108,6 +133,7 @@ def fetch_chat_summary(db:Session,user_id: Text,chat_id: Text):
 def get_convo_count(db:Session,user_id: Text,chat_id: Text):
 	chat_meta =db.query(UserChatActivity).filter(UserChatActivity.user_id == user_id,UserChatActivity.chat_id==chat_id).first()
 	if chat_meta and chat_meta.active:
+		print(f"convo count : {chat_meta.convo_count}")
 		return chat_meta.convo_count
 	return 0
 
@@ -147,9 +173,14 @@ def fetch_user_active_chats(db:Session,user_id: Text):
 	return [chat.chat_id for chat in active_chats]
 
 def fetch_chat_ids(db:Session,user_id: Text,limit: int=10,offset: int=0):
-	chats=db.query(UserChat).filter(UserChat.user_id == user_id).order_by(UserChat.timestamp.desc()).limit(limit).offset(offset).all()
+	chats=db.query(UserChatActivity).filter(UserChatActivity.user_id == user_id).order_by(UserChatActivity.last_accessed.desc()).limit(limit).offset(offset).all()
 	return [chat.chat_id for chat in chats]
 
 def fetch_chat_content(db:Session,user_id: Text,chat_id: Text,limit: int=20,offset: int=0):
 	inference=db.query(UserChat).filter(UserChat.user_id==user_id,UserChat.chat_id==chat_id).order_by(UserChat.timestamp.desc()).limit(limit).offset(offset).all()
-	return [chat.content for chat in inference] if inference else None
+	#print(inference)
+	x=[]
+	for chat in inference:
+		x.append(chat.content)
+		#print(chat.content)
+	return x

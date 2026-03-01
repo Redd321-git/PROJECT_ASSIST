@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status, WebSocket
+from fastapi import Depends, HTTPException, status#, WebSocket
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime,timedelta,timezone
 from sqlalchemy.orm import Session
@@ -87,7 +87,7 @@ def get_session_data(
 	session_data = get_user_active(db, user_id=current_user.user_id)
 	return session_data
 
-def websocket_get_current_user(websocket: WebSocket,token: str):
+'''def websocket_get_current_user(websocket: WebSocket,token: str):
 	from src.crud import get_user_by_email
 	if not token:
 		return websocket.close(code=WS_1008_POLICY_VIOLATION)
@@ -108,4 +108,4 @@ def websocket_get_current_user(websocket: WebSocket,token: str):
 		print(f"DEBUG: Authenticated user: {user.email}")
 		return user
 	except (JWTError, ValueError) as e:
-		return websocket.close(code=WS_1008_POLICY_VIOLATION)	
+		return websocket.close(code=WS_1008_POLICY_VIOLATION)	'''

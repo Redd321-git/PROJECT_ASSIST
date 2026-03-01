@@ -17,6 +17,8 @@ classes:
     properties:
       - name: user_id
         dataType: TEXT
+      - name: task_type
+        dataType: TEXT
       - name: preferences
         dataType: TEXT
       - name: style
